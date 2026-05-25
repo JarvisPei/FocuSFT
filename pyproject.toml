@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "focusft"
+version = "0.1.0"
+description = "FocuSFT: bilevel supervised fine-tuning with fast-weight parametric memory"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1",
+    "transformers>=4.45",
+    "accelerate>=0.30",
+    "datasets>=2.18",
+    "pandas",
+    "pyarrow",
+    "safetensors",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+wandb = [
+    "wandb",
+]
+flash = [
+    "flash-attn>=2.5",
+]
+
+[tool.setuptools.packages.find]
+include = ["focusft*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
