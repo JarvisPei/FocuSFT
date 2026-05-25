@@ -20,7 +20,7 @@ Both loops use the same GLM-style bidirectional-context attention mask:
 ## Installation
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/JarvisPei/FocuSFT.git
 cd FocuSFT
 pip install -e .
 ```
