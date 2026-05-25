@@ -131,6 +131,19 @@ pytest
 
 This project is released under the MIT License.
 
+## Citation
+
+If you find FocuSFT useful, please cite our preprint:
+
+```bibtex
+@article{pei2026focusft,
+  title={FocuSFT: Bilevel Optimization for Dilution-Aware Long-Context Fine-Tuning},
+  author={Pei, Zehua and Zhen, Hui-Ling and Yu, Xianzhi and Pan, Sinno Jialin and Yuan, Mingxuan and Yu, Bei},
+  journal={arXiv preprint arXiv:2605.09932},
+  year={2026}
+}
+```
+
 ## Repository Layout
 
 ```text
