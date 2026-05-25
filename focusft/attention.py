@@ -25,9 +25,8 @@ Design note
     :func:`build_attention_4d` is the single entry point that both the outer
 forward (``FocuSFTTrainer.compute_loss``) and the inner forward
 (``ParametricMemory._inner_forward``) call.  It dispatches on
-``attn_mode`` and returns either a 4D additive mask or ``None`` (meaning
-"fall back to the model's default causal handling from the 2D padding
-mask").  Keeping a single dispatch point ensures the two loops cannot
+``attn_mode`` and returns a 4D additive mask. Keeping a single dispatch
+point ensures the two loops cannot
 silently disagree on their attention pattern.
 """
 
@@ -185,7 +184,7 @@ def build_glm_4d_mask_multiturn(
 # ── Unified dispatch ─────────────────────────────────────────────────
 
 
-VALID_ATTN_MODES = ("causal", "glm_bidir")
+VALID_ATTN_MODES = ("glm_bidir",)
 
 
 def build_attention_4d(
@@ -208,22 +207,18 @@ def build_attention_4d(
         1 = real token, 0 = padding.
     loss_mask : (B, S) or None
         Needed for ``glm_bidir`` (multi-turn, derives user/assistant
-        blocks). Ignored for ``causal``.
+        Needed for ``glm_bidir`` (multi-turn, derives user/assistant blocks).
     target_dtype : torch.dtype
         Additive-mask dtype.
 
     Returns
     -------
-    (B, 1, S, S) additive tensor — or ``None`` if ``attn_mode == 'causal'``.
-    Callers that receive ``None`` should let the model build its own
-    causal mask from the 2D padding mask.
+    (B, 1, S, S) additive tensor.
     """
     if attn_mode not in VALID_ATTN_MODES:
         raise ValueError(
             f"unknown attn_mode={attn_mode!r}; expected one of {VALID_ATTN_MODES}"
         )
-    if attn_mode == "causal":
-        return None
     if loss_mask is None:
         raise ValueError(f"attn_mode={attn_mode!r} requires a loss_mask")
 

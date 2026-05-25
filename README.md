@@ -82,8 +82,6 @@ torchrun --nproc_per_node=8 scripts/train.py \
   --gradient_checkpointing true \
   --attn_implementation sdpa \
   --seed 1234 \
-  --focusft_enabled true \
-  --attention_mode glm_bidir \
   --num_inner_steps 2 \
   --inner_lr 1.0 \
   --inner_grad_clip 1.0 \

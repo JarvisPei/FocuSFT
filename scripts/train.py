@@ -94,22 +94,17 @@ def main() -> None:
         eval_dataset=eval_dataset,
     )
 
-    if training_args.focusft_enabled:
-        assert trainer.memory is not None
-        num_inner = sum(p.numel() for p in trainer.memory.get_all_inner_parameters())
-        num_total = sum(p.numel() for p in model.parameters())
-        logger.info(
-            "FocuSFT enabled: %d fast-weight parameters (%.2f%% of total), "
-            "inner_steps=%d, inner_lr=%.4f, layer_fraction=%.2f, attention=%s",
-            num_inner,
-            100.0 * num_inner / num_total,
-            training_args.num_inner_steps,
-            training_args.inner_lr,
-            training_args.inner_layer_fraction,
-            training_args.attention_mode,
-        )
-    else:
-        logger.info("FocuSFT disabled: running standard SFT.")
+    num_inner = sum(p.numel() for p in trainer.memory.get_all_inner_parameters())
+    num_total = sum(p.numel() for p in model.parameters())
+    logger.info(
+        "FocuSFT enabled: %d fast-weight parameters (%.2f%% of total), "
+        "inner_steps=%d, inner_lr=%.4f, layer_fraction=%.2f, attention=glm_bidir",
+        num_inner,
+        100.0 * num_inner / num_total,
+        training_args.num_inner_steps,
+        training_args.inner_lr,
+        training_args.inner_layer_fraction,
+    )
 
     has_checkpoint = os.path.isdir(training_args.output_dir) and any(
         name.startswith("checkpoint-") for name in os.listdir(training_args.output_dir)

@@ -34,8 +34,6 @@ torchrun --nproc_per_node="${NUM_GPUS}" --master_port="${MASTER_PORT}" \
   --save_strategy no \
   --seed 1234 \
   --attn_implementation sdpa \
-  --focusft_enabled true \
-  --attention_mode glm_bidir \
   --num_inner_steps 2 \
   --inner_lr 1.0 \
   --inner_grad_clip 1.0 \

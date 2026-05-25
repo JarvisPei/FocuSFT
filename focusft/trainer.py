@@ -21,7 +21,6 @@ class FocuSFTConfig(TrainingArguments):
 
     remove_unused_columns: bool = field(default=False)
 
-    focusft_enabled: bool = field(default=True, metadata={"help": "Enable FocuSFT bilevel training."})
     num_inner_steps: int = field(default=2, metadata={"help": "Number of inner-loop SGD steps."})
     inner_lr: float = field(default=1.0, metadata={"help": "Inner-loop learning rate."})
     inner_grad_clip: float = field(default=1.0, metadata={"help": "Inner-loop gradient clipping norm."})
@@ -44,10 +43,6 @@ class FocuSFTConfig(TrainingArguments):
         default=False,
         metadata={"help": "Use optimizer.step for inner updates. False avoids DDP all-reduce on inner grads."},
     )
-    attention_mode: str = field(
-        default="glm_bidir",
-        metadata={"help": "Attention mask for inner and outer loops: 'glm_bidir' or 'causal'."},
-    )
 
 
 class FocuSFTTrainer(transformers.Trainer):
@@ -56,7 +51,7 @@ class FocuSFTTrainer(transformers.Trainer):
     def __init__(self, args: FocuSFTConfig, **kwargs):
         super().__init__(args=args, **kwargs)
         self.memory_config = MemoryConfig(
-            enabled=args.focusft_enabled,
+            enabled=True,
             num_inner_steps=args.num_inner_steps,
             inner_lr=args.inner_lr,
             inner_grad_clip=args.inner_grad_clip,
@@ -67,16 +62,13 @@ class FocuSFTTrainer(transformers.Trainer):
             inner_target_modules=args.inner_target_modules,
             inner_gradient_checkpointing=args.inner_gradient_checkpointing,
             sync_inner=args.sync_inner,
-            attention_mode=args.attention_mode,
         )
 
-        self.memory: ParametricMemory | None = None
-        if self.memory_config.enabled:
-            self.memory = ParametricMemory(model=self.model, config=self.memory_config)
+        self.memory = ParametricMemory(model=self.model, config=self.memory_config)
 
     def create_optimizer(self):
         """Exclude transient inner-loop parameters from the outer optimizer."""
-        if self.optimizer is None and self.memory is not None:
+        if self.optimizer is None:
             inner_params = self.memory.get_all_inner_parameters()
             for param in inner_params:
                 param.requires_grad = False
@@ -123,32 +115,29 @@ class FocuSFTTrainer(transformers.Trainer):
         attention_mask = inputs["attention_mask"]
         loss_mask = inputs["loss_mask"]
 
-        if self.memory is not None and self.memory_config.enabled:
-            self.memory.reset_inner()
-            inner_losses = self.memory.adapt(
-                {
-                    "input_ids": input_ids,
-                    "attention_mask": attention_mask,
-                    "loss_mask": loss_mask,
-                }
-            )
-            if inner_losses and self.state.global_step % max(1, self.args.logging_steps) == 0:
-                valid = [loss for loss in inner_losses if loss == loss]
-                if valid:
-                    self.log({"inner/loss": sum(valid) / len(valid)})
+        self.memory.reset_inner()
+        inner_losses = self.memory.adapt(
+            {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "loss_mask": loss_mask,
+            }
+        )
+        if inner_losses and self.state.global_step % max(1, self.args.logging_steps) == 0:
+            valid = [loss for loss in inner_losses if loss == loss]
+            if valid:
+                self.log({"inner/loss": sum(valid) / len(valid)})
 
-        outer_attention_mask = attention_mask
-        if self.args.attention_mode != "causal":
-            param_dtype = next(
-                (p.dtype for p in model.parameters() if p.is_floating_point()),
-                torch.float32,
-            )
-            outer_attention_mask = build_attention_4d(
-                self.args.attention_mode,
-                attention_mask,
-                loss_mask,
-                target_dtype=param_dtype,
-            )
+        param_dtype = next(
+            (p.dtype for p in model.parameters() if p.is_floating_point()),
+            torch.float32,
+        )
+        outer_attention_mask = build_attention_4d(
+            "glm_bidir",
+            attention_mask,
+            loss_mask,
+            target_dtype=param_dtype,
+        )
 
         outputs = model(
             input_ids=input_ids,

@@ -31,7 +31,6 @@ class MemoryConfig:
     inner_target_modules: str = "gate_proj,up_proj,down_proj"
     inner_gradient_checkpointing: bool = True
     sync_inner: bool = False
-    attention_mode: str = "glm_bidir"
 
 
 class InnerLoRALinear(nn.Module):
@@ -276,15 +275,12 @@ class ParametricMemory:
         attention_mask: torch.Tensor,
         loss_mask: torch.Tensor,
     ) -> torch.Tensor | None:
-        if self.config.attention_mode == "causal":
-            return attention_mask
-
         param_dtype = next(
             (p.dtype for p in self.model.parameters() if p.is_floating_point()),
             torch.float32,
         )
         return build_attention_4d(
-            self.config.attention_mode,
+            "glm_bidir",
             attention_mask,
             loss_mask,
             target_dtype=param_dtype,
