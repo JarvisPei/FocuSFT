@@ -129,6 +129,10 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## License
+
+This project is released under the MIT License.
+
 ## Repository Layout
 
 ```text
